@@ -13,6 +13,8 @@
 	import SvgPanZoom from '../common/SVGPanZoom.svelte';
 	import ArrowLeft from '../icons/ArrowLeft.svelte';
 	import ArrowDownTray from '../icons/ArrowDownTray.svelte';
+	import jsPDF from 'jspdf';
+	import html2canvas from 'html2canvas-pro';
 
 	export let overlay = false;
 	export let history;
@@ -194,6 +196,74 @@
 		URL.revokeObjectURL(url);
 	};
 
+	const downloadArtifactAsPDF = async () => {
+		try {
+			toast.success($i18n.t('Generating PDF...'));
+			
+			// Create a temporary div to render the content
+			const tempDiv = document.createElement('div');
+			tempDiv.innerHTML = contents[selectedContentIdx].content;
+			tempDiv.style.position = 'absolute';
+			tempDiv.style.left = '-9999px';
+			tempDiv.style.width = '794px'; // A4 width in pixels at 96 DPI
+			tempDiv.style.backgroundColor = 'white';
+			tempDiv.style.padding = '20px';
+			
+			// Extract only the body content to avoid HTML/head tags
+			const bodyMatch = contents[selectedContentIdx].content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+			if (bodyMatch) {
+				tempDiv.innerHTML = bodyMatch[1];
+			}
+			
+			document.body.appendChild(tempDiv);
+			
+			// Create canvas from the content
+			const canvas = await html2canvas(tempDiv, {
+				scale: 2,
+				useCORS: true,
+				allowTaint: true,
+				backgroundColor: '#ffffff'
+			});
+			
+			// Remove the temporary div
+			document.body.removeChild(tempDiv);
+			
+			// Create PDF
+			const pdf = new jsPDF({
+				orientation: 'portrait',
+				unit: 'px',
+				format: [794, 1123] // A4 size in pixels
+			});
+			
+			const imgData = canvas.toDataURL('image/png');
+			const imgWidth = 794;
+			const imgHeight = (canvas.height * imgWidth) / canvas.width;
+			
+			let heightLeft = imgHeight;
+			let position = 0;
+			
+			// Add first page
+			pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+			heightLeft -= 1123;
+			
+			// Add additional pages if content is longer than one page
+			while (heightLeft >= 0) {
+				position = heightLeft - imgHeight;
+				pdf.addPage();
+				pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+				heightLeft -= 1123;
+			}
+			
+			// Download the PDF
+			pdf.save(`artifact-${$chatId}-${selectedContentIdx}.pdf`);
+			
+			toast.success($i18n.t('PDF downloaded successfully!'));
+		} catch (error) {
+			console.error('Error generating PDF:', error);
+			toast.error($i18n.t('Failed to generate PDF. Please try again.'));
+		}
+	};
+
 	onMount(() => {
 		artifactCode.subscribe((value) => {
 			if (contents) {
@@ -286,12 +356,34 @@
 							}}>{copied ? $i18n.t('Copied') : $i18n.t('Copy')}</button
 						>
 
-						<Tooltip content={$i18n.t('Download')}>
+						<Tooltip content={$i18n.t('Download HTML')}>
 							<button
 								class=" bg-none border-none text-xs bg-gray-50 hover:bg-gray-100 dark:bg-gray-850 dark:hover:bg-gray-800 transition rounded-md p-0.5"
 								on:click={downloadArtifact}
 							>
 								<ArrowDownTray className="size-3.5" />
+							</button>
+						</Tooltip>
+
+						<Tooltip content={$i18n.t('Download PDF')}>
+							<button
+								class=" bg-none border-none text-xs bg-gray-50 hover:bg-gray-100 dark:bg-gray-850 dark:hover:bg-gray-800 transition rounded-md p-0.5"
+								on:click={downloadArtifactAsPDF}
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									class="size-3.5"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+									/>
+								</svg>
 							</button>
 						</Tooltip>
 

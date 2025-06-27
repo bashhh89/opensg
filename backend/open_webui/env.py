@@ -128,7 +128,21 @@ else:
     try:
         PACKAGE_DATA = json.loads((BASE_DIR / "package.json").read_text())
     except Exception:
-        PACKAGE_DATA = {"version": "0.0.0"}
+        # Fallback to reading package.json from current directory if BASE_DIR fails
+        try:
+            import os
+            current_dir = Path(os.getcwd())
+            if (current_dir / "package.json").exists():
+                PACKAGE_DATA = json.loads((current_dir / "package.json").read_text())
+            else:
+                # If we're in backend directory, go up one level
+                parent_dir = current_dir.parent
+                if (parent_dir / "package.json").exists():
+                    PACKAGE_DATA = json.loads((parent_dir / "package.json").read_text())
+                else:
+                    PACKAGE_DATA = {"version": "0.6.15"}  # Use current version as fallback
+        except Exception:
+            PACKAGE_DATA = {"version": "0.6.15"}  # Use current version as fallback
 
 VERSION = PACKAGE_DATA["version"]
 INSTANCE_ID = os.environ.get("INSTANCE_ID", str(uuid4()))

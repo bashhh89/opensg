@@ -263,172 +263,80 @@
 	</div>
 
 	<div class=" my-2 mb-5 gap-2 grid lg:grid-cols-2 xl:grid-cols-3" id="model-list">
-		{#each filteredModels as model (model.id)}
+		{#each filteredModels as model, i}
 			<div
-				class=" flex flex-col cursor-pointer w-full px-3 py-2 dark:hover:bg-white/5 hover:bg-black/5 rounded-xl transition"
-				id="model-item-{model.id}"
+				class="flex flex-col rounded-lg bg-gray-50 dark:bg-gray-850/50 p-4 transition cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+				role="button"
+				tabindex="0"
+				on:click={() => {
+					goto(`/c/new?model=${model.id}`);
+				}}
+				on:keydown={(e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
+						e.preventDefault();
+						goto(`/c/new?model=${model.id}`);
+					}
+				}}
 			>
-				<div class="flex gap-4 mt-1 mb-0.5">
-					<div class=" w-[44px]">
-						<div
-							class=" rounded-full object-cover {model.is_active
-								? ''
-								: 'opacity-50 dark:opacity-50'} "
-						>
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-2.5">
+						{#if model.meta?.profile_image_url}
 							<img
-								src={model?.meta?.profile_image_url ?? '/static/favicon.png'}
-								alt="modelfile profile"
-								class=" rounded-full w-full h-auto object-cover"
+								class="size-12 rounded-full"
+								src={model.meta.profile_image_url}
+								alt="model profile"
 							/>
-						</div>
-					</div>
-
-					<a
-						class=" flex flex-1 cursor-pointer w-full"
-						href={`/?models=${encodeURIComponent(model.id)}`}
-					>
-						<div class=" flex-1 self-center {model.is_active ? '' : 'text-gray-500'}">
-							<Tooltip
-								content={marked.parse(model?.meta?.description ?? model.id)}
-								className=" w-fit"
-								placement="top-start"
+						{:else}
+							<div
+								class="flex size-12 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center"
 							>
-								<div class=" font-semibold line-clamp-1">{model.name}</div>
-							</Tooltip>
-
-							<div class="flex gap-1 text-xs overflow-hidden">
-								<div class="line-clamp-1">
-									{#if (model?.meta?.description ?? '').trim()}
-										{model?.meta?.description}
-									{:else}
-										{model.id}
-									{/if}
+								<div class="text-3xl select-none">
+									{model.name.toUpperCase().slice(0, 1)}
 								</div>
 							</div>
-						</div>
-					</a>
-				</div>
-
-				<div class="flex justify-between items-center -mb-0.5 px-0.5 mt-1.5">
-					<div class=" text-xs mt-0.5">
-						<Tooltip
-							content={model?.user?.email ?? $i18n.t('Deleted User')}
-							className="flex shrink-0"
-							placement="top-start"
-						>
-							<div class="shrink-0 text-gray-500">
-								{$i18n.t('By {{name}}', {
-									name: capitalizeFirstLetter(
-										model?.user?.name ?? model?.user?.email ?? $i18n.t('Deleted User')
-									)
-								})}
-							</div>
-						</Tooltip>
-					</div>
-
-					<div class="flex flex-row gap-0.5 items-center">
-						{#if shiftKey}
-							<Tooltip content={model?.meta?.hidden ? $i18n.t('Show') : $i18n.t('Hide')}>
-								<button
-									class="self-center w-fit text-sm px-2 py-2 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
-									type="button"
-									on:click={() => {
-										hideModelHandler(model);
-									}}
-								>
-									{#if model?.meta?.hidden}
-										<EyeSlash />
-									{:else}
-										<Eye />
-									{/if}
-								</button>
-							</Tooltip>
-
-							<Tooltip content={$i18n.t('Delete')}>
-								<button
-									class="self-center w-fit text-sm px-2 py-2 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
-									type="button"
-									on:click={() => {
-										deleteModelHandler(model);
-									}}
-								>
-									<GarbageBin />
-								</button>
-							</Tooltip>
-						{:else}
-							{#if $user?.role === 'admin' || model.user_id === $user?.id || model.access_control.write.group_ids.some( (wg) => group_ids.includes(wg) )}
-								<a
-									class="self-center w-fit text-sm px-2 py-2 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
-									type="button"
-									href={`/workspace/models/edit?id=${encodeURIComponent(model.id)}`}
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke-width="1.5"
-										stroke="currentColor"
-										class="w-4 h-4"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
-										/>
-									</svg>
-								</a>
-							{/if}
-
-							<ModelMenu
-								user={$user}
-								{model}
-								shareHandler={() => {
-									shareModelHandler(model);
-								}}
-								cloneHandler={() => {
-									cloneModelHandler(model);
-								}}
-								exportHandler={() => {
-									exportModelHandler(model);
-								}}
-								hideHandler={() => {
-									hideModelHandler(model);
-								}}
-								copyLinkHandler={() => {
-									copyLinkHandler(model);
-								}}
-								deleteHandler={() => {
-									selectedModel = model;
-									showModelDeleteConfirm = true;
-								}}
-								onClose={() => {}}
-							>
-								<button
-									class="self-center w-fit text-sm p-1.5 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
-									type="button"
-								>
-									<EllipsisHorizontal className="size-5" />
-								</button>
-							</ModelMenu>
-
-							<div class="ml-1">
-								<Tooltip content={model.is_active ? $i18n.t('Enabled') : $i18n.t('Disabled')}>
-									<Switch
-										bind:state={model.is_active}
-										on:change={async (e) => {
-											toggleModelById(localStorage.token, model.id);
-											_models.set(
-												await getModels(
-													localStorage.token,
-													$config?.features?.enable_direct_connections &&
-														($settings?.directConnections ?? null)
-												)
-											);
-										}}
-									/>
-								</Tooltip>
-							</div>
 						{/if}
+						<div class="flex flex-col text-sm font-medium">
+							<div class="flex items-center gap-2">
+								<span class="">{model.name}</span>
+							</div>
+							<div class="text-xs text-gray-500 dark:text-gray-400">
+								<span class=" font-normal">By</span>
+								{model.user.name}
+							</div>
+						</div>
+					</div>
+					<div class="flex items-center text-sm">
+						<div class="mr-3">
+							<Switch
+								bind:value={model.enabled}
+								on:change={async (e) => {
+									e.stopPropagation();
+									const res = await toggleModelById(localStorage.token, model.id);
+								}}
+							/>
+						</div>
+						<ModelMenu
+							{model}
+							on:delete={() => {
+								selectedModel = model;
+								showModelDeleteConfirm = true;
+							}}
+							on:clone={() => {
+								cloneModelHandler(model);
+							}}
+							on:share={() => {
+								shareModelHandler(model);
+							}}
+							on:export={() => {
+								exportModelHandler(model);
+							}}
+							on:hide={() => {
+								hideModelHandler(model);
+							}}
+							on:copyLink={() => {
+								copyLinkHandler(model);
+							}}
+						/>
 					</div>
 				</div>
 			</div>
@@ -495,7 +403,7 @@
 						modelsImportInputElement.click();
 					}}
 				>
-					<div class=" self-center mr-2 font-medium line-clamp-1">{$i18n.t('Import Models')}</div>
+					<div class=" self-center mr-2 font-medium line-clamp-1">Add Models</div>
 
 					<div class=" self-center">
 						<svg
@@ -541,33 +449,6 @@
 					</button>
 				{/if}
 			</div>
-		</div>
-	{/if}
-
-	{#if $config?.features.enable_community_sharing}
-		<div class=" my-16">
-			<div class=" text-xl font-medium mb-1 line-clamp-1">
-				{$i18n.t('Made by Open WebUI Community')}
-			</div>
-
-			<a
-				class=" flex cursor-pointer items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-850 w-full mb-2 px-3.5 py-1.5 rounded-xl transition"
-				href="https://openwebui.com/#open-webui-community"
-				target="_blank"
-			>
-				<div class=" self-center">
-					<div class=" font-semibold line-clamp-1">{$i18n.t('Discover a model')}</div>
-					<div class=" text-sm line-clamp-1">
-						{$i18n.t('Discover, download, and explore model presets')}
-					</div>
-				</div>
-
-				<div>
-					<div>
-						<ChevronRight />
-					</div>
-				</div>
-			</a>
 		</div>
 	{/if}
 {:else}

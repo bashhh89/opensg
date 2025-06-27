@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "Start Backend",
+			"command": "backend\\start_windows.bat",
+			"group": "build",
+			"isBackground": true
+		}
+	]
+}
